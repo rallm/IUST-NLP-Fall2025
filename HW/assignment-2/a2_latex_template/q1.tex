@@ -51,6 +51,8 @@ Prove that the naive-softmax loss (Equation \ref{naive-softmax}) is the same as 
 
 Your answer should be one line. You may describe your answer in words.
 
+\ifans{Because the true distribution vector $\by$ is one-hot, it is $1$ at the correct class $o$ ($\by_o=1$) and $0$ everywhere else ($\by_w=0$ for all $w \neq o$), so all terms in the summation become zero except for the single term $-\by_o \log(\hat{\by}_o)$, which simplifies to $-\log(\hat{\by}_o)$.}
+
 
 % Question 1-B
 \part[6]
@@ -61,15 +63,75 @@ Your answer should be one line. You may describe your answer in words.
         \item \textbf{Note}: Your final answers for the partial derivative should follow the shape convention: the partial derivative of any function $f(x)$ with respect to $x$ should have the \textbf{same shape} as $x$.\footnote{This allows us to efficiently minimize a function using gradient descent without worrying about reshaping or dimension mismatching. While following the shape convention, we're guaranteed that $\theta:= \theta - \alpha\frac{\partial J(\theta)}{\partial \theta}$ is a well-defined update rule.}
         \item Please provide your answers for the partial derivative in vectorized form. For example, when we ask you to write your answers in terms of $\by$, $\hat{\by}$, and $\bU$, you may not refer to specific elements of these terms in your final answer (such as $\by_1$, $\by_2$, $\dots$). 
     \end{itemize}
+    \ifans{
+        We start from the simplified loss function after using $log(a / b) = log(a) - log(b)$ and $log(exp(x)) = x$ rules:
+        $$J = \log \sum_{w \in \text{Vocab}} \exp(\bu_{w}^\top \bv_c) - \bu_{o}^\top \bv_c$$
+        Now, we take the partial derivative with respect to $\bv_c$:
+        \begin{align*}
+        \frac{\partial J}{\partial \mathbf{v}_c}
+        &= 
+        \frac{\partial}{\partial \mathbf{v}_c}
+        \left(
+            \log \sum_{w \in \text{Vocab}} 
+            \exp(\mathbf{u}_w^\top \mathbf{v}_c)
+        \right)
+        -
+        \frac{\partial}{\partial \mathbf{v}_c}
+        (\mathbf{u}_o^\top \mathbf{v}_c)
+        \\[10pt]
+        % second line
+        &=
+        \left(
+            \frac{1}{
+                \sum_{x \in \text{Vocab}} 
+                \exp(\mathbf{u}_x^\top \mathbf{v}_c)
+            }
+        \right)
+        \left(
+            \sum_{w \in \text{Vocab}} 
+            \exp(\mathbf{u}_w^\top \mathbf{v}_c)
+            \frac{\partial}{\partial \mathbf{v}_c}
+            (\mathbf{u}_w^\top \mathbf{v}_c)
+        \right)
+        - \mathbf{u}_o
+        \\[10pt]
+        % third line
+        &=
+        \sum_{w \in \text{Vocab}}
+        \left(
+            \frac{
+                \exp(\mathbf{u}_w^\top \mathbf{v}_c)
+            }{
+                \sum_{x \in \text{Vocab}} 
+                \exp(\mathbf{u}_x^\top \mathbf{v}_c)
+            }
+        \right)
+        \mathbf{u}_w
+        - \mathbf{u}_o
+        \\[10pt]
+        % forth line
+        &=
+        \sum_{w \in \text{Vocab}}
+        \hat{y}_w \, \mathbf{u}_w
+        - \mathbf{u}_o
+        \end{align*}
+        To write this in the requested vectorized form, we recognize that $\sum_{w \in \text{Vocab}} \hat{\by}_w \bu_w$ is a weighted sum of all columns in $\bU$, which is equivalent to the matrix-vector product $\bU \hat{\by}$.Similarly, $\bu_o$ is the $o$-th column of $\bU$, which can be selected by the one-hot vector $\by$ via the product $\bU \by$.Therefore, the vectorized form is:$$\frac{\partial J}{\partial \bv_c} = \bU \hat{\by} - \bU \by = \bU (\hat{\by} - \by)$$
+    }
     \item
     When is the gradient you computed equal to zero? \\
     \textbf{Hint:} You may wish to review and use some introductory linear algebra concepts.
+    
+    \ifans{
+        The gradient $\bU (\hat{\by} - \by)$ is equal to zero when $\hat{\by} = \by$. This occurs when the predicted probability distribution $\hat{\by}$ is identical to the true one-hot distribution $\by$, meaning the model predicts a probability of $1$ for the correct outside word $o$ and a probability of $0$ for all other words in the vocabulary.
+    }
     \item
     The gradient you found is the difference between the two terms. Provide an interpretation of how each of these terms improves the word vector when this gradient is subtracted from the word vector $v_c$.
-
+    
+    \ifans{
+        The gradient is $\bU \hat{\by} - \bU \by$, or $\sum_{w} \hat{\by}_w \bu_w - \bu_o$. The stochastic gradient descent update rule is $\bv_c^{\text{new}} = \bv_c^{\text{old}} - \alpha \frac{\partial J}{\partial \bv_c}$. Substituting our gradient, we get:$$\bv_c^{\text{new}} = \bv_c^{\text{old}} - \alpha (\bU \hat{\by} - \bU \by) = \bv_c^{\text{old}} + \alpha (\bU \by - \bU \hat{\by})$$\begin{enumerate}\item \textbf{The first term, $\bU \by$ (or $\bu_o$):} This is the "true" outside word vector. By adding $\alpha (\bU \by)$ to $\bv_c$, the update rule \textbf{pulls the center word vector $\bv_c$ closer} to the vector of the word $\bu_o$ that actually appeared in its context. This increases their similarity, making the true word more likely in the future.\item \textbf{The second term, $-\bU \hat{\by}$ (or $-\sum_{w} \hat{\by}_w \bu_w$):} This is the "expected" outside word vector under the model's (incorrect) predicted distribution $\hat{\by}$. By subtracting $\alpha (\bU \hat{\by})$ from $\bv_c$, the update rule \textbf{pushes the center word vector $\bv_c$ away} from the average representation of all words, weighted by how likely the model currently thinks they are.
+        \end{enumerate}In short, the gradient update simultaneously increases the similarity of $\bv_c$ to the true outside word $o$ while decreasing its similarity to all other words (proportionally to how likely the model predicted them to be).
+    }
 \end{enumerate}
-
-
 
 % Question 1-C
 \part[1]
@@ -77,16 +139,67 @@ In many downstream applications using word embeddings, L2 normalized vectors (e.
 
 \textbf{Hint:} Consider the case where $\mathbf{u}_x = \alpha\mathbf{u}_y$ for some words $x \neq y$ and some scalar $\alpha$. When $\alpha$ is positive, what will be the value of normalized  $\mathbf{u}_x$ and normalized $\mathbf{u}_y$? How might $\mathbf{u}_x$ and $\mathbf{u}_y$ be related for such a normalization to affect or not affect the resulting classification?
 
+\ifans{ \begin{itemize} \item \textbf{When it would not take away useful information:} L2 normalization would not be harmful if the downstream task only depends on the \textit{direction} of the vectors, not their magnitude. For example, if all positive-sentiment words (e.g., good, nice, superb) generally point in one direction and all negative-sentiment words (e.g., bad, awful, terrible) point in another, normalization preserves this essential directional difference, allowing the classifier to still work.
+
+\item \textbf{When it would take away useful information:} L2 normalization would be harmful if the \textit{magnitude} (length) of the vector encodes important information. Following the hint, consider $\bu_x = \alpha \bu_y$ with $\alpha > 0$ (e.g., $x=$`superb`, $y=$`good`, and $\alpha=1.5$). Both vectors point in the same "positive" direction. After normalization, the two vectors would become identical ($\bu_x' = \bu_y'$). If the magnitude was encoding the \textit{intensity} of the sentiment (i.e., `superb` is "more positive" than `good`), this information is now lost. In the binary classification task based on the sum, both words would now contribute the exact same amount to the phrase's "positive" score, which is a loss of useful, nuanced information.
+\end{itemize} }
 
 % Question 1-D
 \part[5] 
 Compute the partial derivatives of $\bJ_{\text{naive-softmax}}(\bv_c, o, \bU)$ with respect to each of the `outside' word vectors, $\bu_w$'s. There will be two cases: when $w=o$, the true `outside' word vector, and $w \neq o$, for all other words. Please write your answer in terms of $\by$, $\hat{\by}$, and $\bv_c$. In this subpart, you may use specific elements within these terms as well (such as $\by_1$, $\by_2$, $\dots$). Note that $\bu_w$ is a vector while $\by_1, \by_2, \dots$ are scalars. Show your work to receive full credit.
 
-
+\ifans{
+    \[
+    J = - \log P(O=o|C=c)
+       = - \log\left(\frac{\exp(\mathbf{u}_{o}^\top \mathbf{v}_c)}{\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)}\right)
+       = - \mathbf{u}_{o}^\top \mathbf{v}_c + \log\left(\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)\right)
+    \]
+    
+    \textbf{Case 1: } $w = o$
+    
+    \begin{align*}
+    \frac{\partial J}{\partial \mathbf{u}_o}
+    &= \frac{\partial}{\partial \mathbf{u}_o} \left( - \mathbf{u}_{o}^\top \mathbf{v}_c + \log\!\left(\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)\right) \right) \\[8pt]
+    &= -\mathbf{v}_c + \frac{1}{\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)} 
+        \cdot \frac{\partial}{\partial \mathbf{u}_o}\!\left( \exp(\mathbf{u}_{o}^\top \mathbf{v}_c) \right) \\[8pt]
+    &= -\mathbf{v}_c + \left( \frac{\exp(\mathbf{u}_{o}^\top \mathbf{v}_c)}{\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)} \right) \mathbf{v}_c \\[8pt]
+    &= -\mathbf{v}_c + \hat{\mathbf{y}}_o \mathbf{v}_c \\[8pt]
+    &= (\hat{\mathbf{y}}_o - 1)\mathbf{v}_c
+    \end{align*}
+    
+    \[
+    \frac{\partial J}{\partial \mathbf{u}_o} = (\hat{\mathbf{y}}_o - \mathbf{y}_o)\mathbf{v}_c
+    \]
+    
+    \textbf{Case 2: } $w \neq o$
+    
+    \begin{align*}
+    \frac{\partial J}{\partial \mathbf{u}_w}
+    &= \frac{\partial}{\partial \mathbf{u}_w} \left( - \mathbf{u}_{o}^\top \mathbf{v}_c + \log\!\left(\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)\right) \right) \\[8pt]
+    &= \frac{1}{\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)} 
+       \cdot \frac{\partial}{\partial \mathbf{u}_w}\!\left( \exp(\mathbf{u}_{w}^\top \mathbf{v}_c) \right) \\[8pt]
+    &= \left( \frac{\exp(\mathbf{u}_{w}^\top \mathbf{v}_c)}{\sum_{x \in \text{Vocab}} \exp(\mathbf{u}_{x}^\top \mathbf{v}_c)} \right) \mathbf{v}_c \\[8pt]
+    &= \hat{\mathbf{y}}_w \mathbf{v}_c
+    \end{align*}
+    
+    \[
+    \frac{\partial J}{\partial \mathbf{u}_w} = (\hat{\mathbf{y}}_w - \mathbf{y}_w)\mathbf{v}_c
+    \]
+}
 
 % Question 1-E
 \part[1]
 Write down the partial derivative of $\bJ_{\text{naive-softmax}}(\bv_c, o, \bU)$ with respect to $\bU$. Please break down your answer in terms of the column vectors $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_1}$, $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_2}$, $\cdots$, $\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_{|\text{Vocab}|}}$. No derivations are necessary, just an answer in the form of a matrix.
 
+\ifans{ As requested, the partial derivative with respect to $\bU$ is a matrix composed of the partial derivatives with respect to each of its column vectors:
+
+$$\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bU} = \begin{bmatrix} \frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_1} & \frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_2} & \cdots & \frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bu_{|\text{Vocab}|}} \end{bmatrix}$$
+Using our result from part (d) where $\frac{\partial J}{\partial \bu_w} = (\hat{\by}_w - \by_w) \bv_c$, we can write this matrix as:
+
+$$\begin{bmatrix} (\hat{\by}_1 - \by_1)\bv_c & (\hat{\by}_2 - \by_2)\bv_c & \cdots & (\hat{\by}_{|\text{Vocab}|} - \by_{|\text{Vocab}|})\bv_c \end{bmatrix}$$
+This is most compactly expressed as the outer product of the vectors $\bv_c$ and $(\hat{\by} - \by)$:
+
+$$\frac{\partial \bJ(\bv_c, o, \bU)}{\partial \bU} = \bv_c (\hat{\by} - \by)^\top$$
+}
 
 \end{parts}

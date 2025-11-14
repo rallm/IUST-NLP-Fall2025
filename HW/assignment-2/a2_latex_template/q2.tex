@@ -18,7 +18,9 @@
                 	\btheta_{t+1} &\gets \btheta_t - \alpha \bm_{t+1}
                 }
                 where $\beta_1$ is a hyperparameter between 0 and 1 (often set to  0.9). Briefly explain in 2--4 sentences (you don't need to prove mathematically, just give an intuition) how using $\bm$ stops the updates from varying as much and why this low variance may be helpful to learning, overall.\newline
-              
+
+            \ifans{The answer is attached at the end of the document.}
+            \newline
                 
             \subpart[2] Adam extends the idea of {\it momentum} with the trick of {\it adaptive learning rates} by keeping track of  $\bv$, a rolling average of the magnitudes of the gradients:
                 \alns{
@@ -28,7 +30,8 @@
                 }
                 where $\odot$ and $/$ denote elementwise multiplication and division (so $\bz \odot \bz$ is elementwise squaring) and $\beta_2$ is a hyperparameter between 0 and 1 (often set to  0.99). Since Adam divides the update by $\sqrt{\bv}$, which of the model parameters will get larger updates?  Why might this help with learning?
                 
-           
+                \ifans{The answer is attached at the end of the document.}
+                \newline
                 
                 \end{subparts}
         
@@ -48,9 +51,12 @@
             \subpart[2]
                 What must $\gamma$ equal in terms of $p_{\text{drop}}$? Briefly justify your answer or show your math derivation using the equations given above.
                 
+                \ifans{The answer is attached at the end of the document.}
+                \newline
             
           \subpart[2] Why should dropout be applied during training? Why should dropout \textbf{NOT} be applied during evaluation? \textbf{Hint:} it may help to look at the dropout paper linked. \newline
-          
+            \ifans{The answer is attached at the end of the document.}
+            \newline
          
         \end{subparts}
 
